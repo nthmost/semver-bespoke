@@ -8,16 +8,28 @@ The official Semver 2.0 reference can be found at https://semver.org/spec/v2.0.0
 After cloning this repo, navigate into the newly created folder and create a python
 virtual environment for this project::
 
-  pyvenv ve
-  source ve/bin/activate
-  python setup.py install
+```
+python3 -m venv
+source ve/bin/activate
+python setup.py install
+```
 
-If all went well, you should have the `semver` command-line tool at your disposal.  You can either 
-feed semver the name of a file containing readable text, or you can pipe it lines of input via stdin.
+If all went well, you should have the `semver` command-line tool at your disposal.
 
-  echo "1.2.3  1.2.4" > semver
+The `semver` CLI tool reads each line it is given and determines (prints) the relationship 
+of the two semantic version tags (separated by any whitespace, 2 per line). 
 
-  semver input.txt
+To use it, you have two options.  You can pipe it lines of input via stdin...
+
+```
+echo "1.2.3  1.2.4" > semver
+```
+
+Or you can read from a file containing readable text.
+
+```
+semver input.txt
+```
 
 
 ## Developer API ##
