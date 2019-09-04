@@ -121,7 +121,11 @@ class SemverThing(object):
         """ text argument overrides use of kwargs. """
 
         if text: 
-            kwargs = parse_semver_text(text)
+            try:
+                kwargs = parse_semver_text(text)
+            except TypeError:
+                # attempt to create SemverThing using number or other nonsense.
+                raise NotSemanticVersion('{} is not a valid string.'.format(text))
 
         self.major = kwargs.get('major', None)
         self.minor = kwargs.get('minor', None)
@@ -141,6 +145,7 @@ class SemverThing(object):
     def major(self, value):
         if value is None:
             self._major = None
+            return
         self._major = int(value)
 
     @property
@@ -151,6 +156,7 @@ class SemverThing(object):
     def minor(self, value):
         if value is None:
             self._minor = None 
+            return 
         self._minor = int(value)
 
     @property
@@ -161,6 +167,7 @@ class SemverThing(object):
     def patch(self, value):
         if value is None:
             self._patch = None
+            return
         self._patch = int(value)
 
 

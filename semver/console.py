@@ -4,6 +4,38 @@ import fileinput
 
 from .semver import SemverThing, NotSemanticVersion
 
+
+
+def compare_versions(vstr1, vstr2):
+    """This function compares two version strings and returns an answer as to whether
+    the first in the pair is "before", "after" or "equal" to the second in the pair.
+
+    If either string cannot be parsed as a semantic version string, the answer 
+    returned will be "invalid".
+
+    :param vstr1: version string (plain text)
+    :param vstr2: version string (plain text, different from 1st)
+    :return: answer (str)
+    :rtype: str
+    """
+    try:
+        sv1 = SemverThing(vstr1)
+        sv2 = SemverThing(vstr2)
+    except NotSemanticVersion:
+        return 'invalid'
+
+    try:
+        if sv1 < sv2:
+            return 'before'
+        elif sv1 > sv2:
+            return 'after'
+        elif sv1 == sv2:
+            return 'equal'
+    except TypeError:
+        # attempt to compare SemverThing in which one or more properties are None
+        return 'invalid'
+
+
 def main():
     """Command line tool "semver" that compares a list of paired semantic version strings.
 
@@ -37,19 +69,6 @@ def main():
             print('invalid')
             continue
 
-        # now we have 2 words to compare.
-        try:
-            sv1 = SemverThing(words[0])
-            sv2 = SemverThing(words[1])
-        except NotSemanticVersion:
-            print('invalid')
-            continue
-
-        if sv1 < sv2:
-            print('before')
-        elif sv1 > sv2:
-            print('after')
-        elif sv1 == sv2:
-            print('equal')
-
+        # now we should have 2 words to compare.
+        print(compare_versions(words[0], words[1]))
 
