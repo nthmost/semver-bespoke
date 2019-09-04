@@ -5,7 +5,7 @@ from semver import SemverThing, NotSemanticVersion
 
 semver_correct = ['1.2.3-blah+thing', '1.2.3', '1.2.3-blah', '1.2.3+thing']
 
-semver_wrong = ['2.3-blah', '0.0', '234235-prerelease', '425']
+semver_wrong = ['2.3-blah', '0.0+test', '234235-prerelease', '425']
 
 class TestSemverThing(TestCase):
 
@@ -19,9 +19,9 @@ class TestSemverThing(TestCase):
         "Testing that various formats of Semantic Version strings parse correctly."
         for item in semver_correct:
             sv = SemverThing(item)
-            assert sv.major == '1'
-            assert sv.minor == '2'
-            assert sv.patch == '3'
+            assert sv.major == 1
+            assert sv.minor == 2
+            assert sv.patch == 3
             if sv.prerelease:
                 assert sv.prerelease == 'blah'
             if sv.buildmetadata:
@@ -41,6 +41,9 @@ class TestSemverThing(TestCase):
         sv_mid1 = SemverThing('2.4.6')
         sv_mid2 = SemverThing('2.6.6')
         sv_mid3 = SemverThing('2.6.7')
+        sv_mid2_prerelease = SemverThing('2.6.6-alpha')
+        sv_mid2_prerelease2 = SemverThing('2.6.6-beta')
+        sv_mid3_prerelease = SemverThing('2.6.7-alpha')
 
         # comparison on major versions
         assert sv_lowest < sv_highest
@@ -67,7 +70,15 @@ class TestSemverThing(TestCase):
         assert sv_mid2 <= sv_mid3
         assert sv_mid3 >= sv_mid2
         self.assertFalse(sv_mid2 == sv_mid3)
+        assert sv_mid3_prerelease > sv_mid2_prerelease2
 
-        #TODO comparison on build and prerelease
-
+        #comparison on prereleases
+        assert sv_mid2 > sv_mid2_prerelease
+        assert sv_mid2_prerelease2 > sv_mid2_prerelease
+        assert sv_mid2_prerelease < sv_mid2
+        assert sv_mid2_prerelease != sv_mid2_prerelease2
+ 
+        # same prerelease text, different patch versions
+        assert sv_mid3_prerelease != sv_mid2_prerelease2
+        assert sv_mid3_prerelease > sv_mid2_prerelease
 
