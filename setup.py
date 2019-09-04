@@ -15,7 +15,7 @@ setup (
             ],
        install_requires = [
             'docopt',       #for happy docstring/CLI-option marriage.
-            'coloredlogs',  #pretty logs
             'ipython',      #interactive consoles
+            'pytest',       #test harness
             ],
      )

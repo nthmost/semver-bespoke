@@ -27,37 +27,85 @@ def parse_semver_text(text):
     return res.groupdict()
 
 
+def cmp_prerelease(sv1, sv2):
+    """Helper function for comparing the prerelease strings on two SemverThing objects.
+    
+    if sv1 has precedence over sv2, returns the number 1.
+    if sv2 has precedence over sv1, returns the number 2.
+    if they are equivalent, returns the number 0.
+    """
+    if sv1.prerelease == sv2.prerelease:
+        return 0
+
+    if sv1.prerelease and sv2.prerelease:
+        if sv1.prerelease > sv2.prerelease:
+            # e.g. "alpha" < "beta" --> True
+            #      "beta" < "gamma" --> True
+            return 1
+        elif sv2.prerelease < sv2.prerelease:
+            return 2
+
+    elif sv1.prerelease and not sv2.prerelease:
+        return 2
+
+    # which leaves us with sv2 having a prerelease and sv1 not having one.
+    return 1
+
+
 class SemverThing(object):
     """ You can build a SemverThing in three ways:
 
     1) Instantiate with a plain string, e.g. "1.2.3".  The text variable will be parsed
        through regular expressions to identify each part of the semver construction. For example:
 
-        sv = SemverThing("1.2.3-prerelease+build")
-        print(sv.build)       # build
-        print(sv.major)       # 1
-        print(sv.prerelease)  # prerelease
-        print(sv.minor)       # 2
-        print(sv.patch)       # 3
+           sv = SemverThing("1.2.3-prerelease+build")
+           print(sv.build)       # build
+           print(sv.major)       # 1
+           print(sv.prerelease)  # prerelease
+           print(sv.minor)       # 2
+           print(sv.patch)       # 3
 
     2) Instantiate with keyword arguments, for example:
   
-       sv = SemverThing(major=1, minor=2, patch=3)  #, prerelease, buildmetadata 
+           sv = SemverThing(major=1, minor=2, patch=3)  #, prerelease, buildmetadata 
 
     3) Instantiate without arguments to create a blank slate, to which you can
-       assign values to its version attributes one at a time.  For Example:
+       assign values to its version attributes one at a time.  
+       For Example:
 
-       sv = SemverThing()
-       sv.major = 1
-       sv.minor = 2
-       sv.patch = 3 
-       print(sv)              # 1.2.3
+           sv = SemverThing()
+           sv.major = 1
+           sv.minor = 2
+           sv.patch = 3 
+           print(sv)              # 1.2.3
 
-       sv.buildmetadata = "somebuild"
-       print(sv)              # 1.2.3+somebuild
+           sv.buildmetadata = "somebuild"
+           print(sv)              # 1.2.3+somebuild
 
-       sv.prerelease = "alpha"
-       print(sv)              # 1.2.3-alpha+somebuild
+           sv.prerelease = "alpha"
+           print(sv)              # 1.2.3-alpha+somebuild
+
+
+    Usage:
+
+        All arithmetic comparison operators are implemented on this object, so you can do:
+
+           sv1 = SemverThing('1.2.3-alpha')
+           sv2 = SemverThing('1.2.3')
+
+           print(sv1 > sv2)      # False
+           print(sv1 != sv2)     # True
+           print(sv2 > sv1)      # True
+
+
+        NOTE that numerical version components (major, minor, patch) are converted to integers within
+        the object for ease of comparison.
+
+        To convert a SemverThing to a composed version string, simply use the python str operator::
+
+            print(sv1)                               # "1.2.3-alpha"
+            print("My version is %s" % sv2)          # "My version is 1.2.3"
+
     """
 
     def __init__(self, text=None, **kwargs):
@@ -69,9 +117,47 @@ class SemverThing(object):
         self.major = kwargs.get('major', None)
         self.minor = kwargs.get('minor', None)
         self.patch = kwargs.get('patch', None)
-        self.prerelease = kwargs.get('prerelease', None)
-        self.buildmetadata = kwargs.get('buildmetadata', None)
+        self.prerelease = kwargs.get('prerelease', '')
+        self.buildmetadata = kwargs.get('buildmetadata', '')
 
+    # MAGIC PROPERTIES for the numerical attributes:
+    #   1) convert input to integer (raise ValueError if not convertible to int)
+    #   2) allow setting properties to None without error.
+
+    @property
+    def major(self):
+        return self._major
+
+    @major.setter
+    def major(self, value):
+        if value is None:
+            self._major = None
+        self._major = int(value)
+
+    @property
+    def minor(self):
+        return self._minor
+
+    @minor.setter
+    def minor(self, value):
+        if value is None:
+            self._minor = None 
+        self._minor = int(value)
+
+    @property
+    def patch(self):
+        return self._patch
+
+    @patch.setter
+    def patch(self, value):
+        if value is None:
+            self._patch = None
+        self._patch = int(value)
+
+
+    # COMPARISON OPERATOR DEFINTIIONS: 
+    #           the left-hand object in the statement is "self"; the right-hand is "other".
+    #
     # <
     def __lt__(self, other):
         if self.major < other.major:
@@ -81,18 +167,24 @@ class SemverThing(object):
             if self.minor < other.minor:
                 return True
             elif self.minor == other.minor:
-                return (self.patch < other.patch)
-            else:
-                return False
+                if self.patch < other.patch:
+                    return True
+                elif self.patch > other.patch:
+                    return False
+                else:
+                    # patches are equivalent; compare on prerelease.
+                    # here we only want to know if other > self (result of 2).
+                    return True if cmp_prerelease(self, other) == 2 else False
 
+        # self.major > self.minor
         return False
 
     # <=
     def __le__(self, other):
-        if self.__eq__(self, other):
+        if self.__eq__(other):
             return True
 
-        if self.__lt__(self, other):
+        if self.__lt__(other):
             return True
 
         return False
@@ -102,35 +194,52 @@ class SemverThing(object):
         if self.major > other.major:
             return True
 
-        if self.major == other.major:
+        elif self.major == other.major:
+            # majors are equivalent: compare on minor
             if self.minor > other.minor:
                 return True
-            elif self.minor == other.minor:
-                return (self.patch > other.patch)
-            else:
-                return False
 
+            elif self.minor == other.minor:
+                # both minors are equal; compare on patch
+                if self.patch > other.patch:
+                    return True
+                elif self.patch < other.patch:
+                    return False 
+
+                elif self.patch == other.patch:
+                    # compare prereleases -- return is in (0, 1, 2) 
+                    # here we only want to know if the result was 1 (self has precendence).
+                    return True if cmp_prerelease(self, other) == 1 else False
+
+        # self.major < self.minor
         return False
 
     # >=
     def __ge__(self, other):
-        if self.__eq__(self, other):
+        if self.__eq__(other):
             return True
 
-        if self.__gt__(self, other):
+        if self.__gt__(other):
             return True
 
         return False
 
     # ==
     def __eq__(self, other):
-        return (self.major == other.major) and (self.minor == other.minor) and (self.patch == other.patch)
+        if (self.major == other.major) and (self.minor == other.minor) and (self.patch == other.patch):
+            # compare prerelease strings (pos results: 0, 1, 2 with 0 meaning equivalence).
+            if cmp_prerelease(self, other) == 0:
+                return True
+        return False
 
     # !=
     def __ne__(self, other):
-        return not(self.__eq__(self, other))
+        return not(self.__eq__(other))
+
+    # OBJECT REPRESENTATION FUNCTIONS: to_dict, __str__, __repr__
 
     def to_dict(self):
+        "Returns a dictionary representation of the attributes on this object."
         return {'major': self.major,
                 'minor': self.minor,
                 'patch': self.patch,
@@ -148,5 +257,6 @@ class SemverThing(object):
             out += '+{buildmetadata}'
         return out.format(**self.to_dict())
 
-
+    def __repr__(self):
+        return '<SemverThing {}>'.format(str(self))
 
