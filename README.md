@@ -12,10 +12,12 @@ virtual environment for this project::
   source ve/bin/activate
   python setup.py install
 
-If all went well, you should have some command-line tools at your disposal::
+If all went well, you should have the `semver` command-line tool at your disposal.  You can either 
+feed semver the name of a file containing readable text, or you can pipe it lines of input via stdin.
 
-  ./api-shell
-  semver --help
+  echo "1.2.3  1.2.4" > semver
+
+  semver input.txt
 
 
 ## Developer API ##
@@ -75,4 +77,12 @@ You can build a SemverThing in three different ways:
 
             print(sv1)                               # "1.2.3-alpha"
             print("My version is %s" % sv2)          # "My version is 1.2.3"
+
+
+## Contact ##
+
+This library and command line tool was written for a coding assignment by Naomi Most.
+I may or may not keep it updated if I find it useful.
+
+pnaomi@gmail.com
 
