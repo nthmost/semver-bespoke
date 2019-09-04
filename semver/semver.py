@@ -47,6 +47,8 @@ def cmp_prerelease(sv1, sv2):
         return 0
 
     if sv1.prerelease and sv2.prerelease:
+        #TODO: string comparison to see if we want to compare numbers.
+
         if sv1.prerelease > sv2.prerelease:
             # e.g. "beta" > "alpha" --> True
             return 1

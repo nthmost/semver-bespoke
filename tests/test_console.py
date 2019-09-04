@@ -32,6 +32,10 @@ EXPECT_INVALID = [('1.1.2', '1.1'),
                   (None, None),
                   (1.23, 10.2),
                  ]
+BONUS_ROUND = ('1.0.0-alpha', '1.0.0-alpha.1', '1.0.0-alpha.beta', '1.0.0-beta', 
+               '1.0.0-beta.2', '1.0.0-beta.11', '1.0.0-rc.1', '1.0.0')
+
+
 
 class TestSemverConsole(TestCase):
 
@@ -52,4 +56,10 @@ class TestSemverConsole(TestCase):
             print(pair)
             assert compare_versions(*pair) == 'invalid'
 
+    def test_examples_in_semver2_spec(self):
+        last_item = BONUS_ROUND[0]
+        for item in BONUS_ROUND[1:]:
+            print(last_item, item)
+            assert compare_versions(last_item, item) == 'before'
+            last_item = item
 
