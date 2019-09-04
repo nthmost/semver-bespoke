@@ -14,21 +14,30 @@ def parse_semver_text(text):
     
     If regular expression parsing fails, raises NotSemanticVersion exception.
 
+    The dictionary returned should contain the following keys if successful:
+
+        major
+        minor
+        patch
+        prerelease
+        buildmetadata
+
     :param text: (str)
-    :return: 
+    :return: match group from regular expression (if successful)
     :rtype: dict
     :raises: NotSemanticVersion
     """
-    
     res = re_semver.match(text)
     if not res:
         raise NotSemanticVersion
-    
     return res.groupdict()
 
 
 def cmp_prerelease(sv1, sv2):
     """Helper function for comparing the prerelease strings on two SemverThing objects.
+
+    Note that if one SV object has NO prerelease string and the other does, the first one with
+    the empty string takes precedence.
     
     if sv1 has precedence over sv2, returns the number 1.
     if sv2 has precedence over sv1, returns the number 2.
@@ -39,10 +48,10 @@ def cmp_prerelease(sv1, sv2):
 
     if sv1.prerelease and sv2.prerelease:
         if sv1.prerelease > sv2.prerelease:
-            # e.g. "alpha" < "beta" --> True
-            #      "beta" < "gamma" --> True
+            # e.g. "beta" > "alpha" --> True
             return 1
-        elif sv2.prerelease < sv2.prerelease:
+        elif sv1.prerelease < sv2.prerelease:
+            # e.g.  "beta" < "gamma" --> True
             return 2
 
     elif sv1.prerelease and not sv2.prerelease:

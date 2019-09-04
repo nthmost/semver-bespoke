@@ -20,7 +20,59 @@ If all went well, you should have some command-line tools at your disposal::
 
 ## Developer API ##
 
+The real work of parsing and comparing versions is done on the SemverThing object.
+
+Yes I realize this is a silly name.
+
+You can build a SemverThing in three different ways:
+
+    1) Instantiate with a plain string, e.g. "1.2.3".  The text variable will be parsed
+       through regular expressions to identify each part of the semver construction. For example:
+
+           sv = SemverThing("1.2.3-prerelease+build")
+           print(sv.build)       # build
+           print(sv.major)       # 1
+           print(sv.prerelease)  # prerelease
+           print(sv.minor)       # 2
+           print(sv.patch)       # 3
+
+    2) Instantiate with keyword arguments, for example:
+  
+           sv = SemverThing(major=1, minor=2, patch=3)  #, prerelease, buildmetadata 
+
+    3) Instantiate without arguments to create a blank slate, to which you can
+       assign values to its version attributes one at a time.  
+       For Example:
+
+           sv = SemverThing()
+           sv.major = 1
+           sv.minor = 2
+           sv.patch = 3 
+           print(sv)              # 1.2.3
+
+           sv.buildmetadata = "somebuild"
+           print(sv)              # 1.2.3+somebuild
+
+           sv.prerelease = "alpha"
+           print(sv)              # 1.2.3-alpha+somebuild
+
+    SemverThing Usage:
+
+        All arithmetic comparison operators are implemented on this object, so you can do:
+
+           sv1 = SemverThing('1.2.3-alpha')
+           sv2 = SemverThing('1.2.3')
+
+           print(sv1 > sv2)      # False
+           print(sv1 != sv2)     # True
+           print(sv2 > sv1)      # True
 
 
+        NOTE that numerical version components (major, minor, patch) are converted to integers within
+        the object for ease of comparison.
 
+        To convert a SemverThing to a composed version string, simply use the python str operator::
+
+            print(sv1)                               # "1.2.3-alpha"
+            print("My version is %s" % sv2)          # "My version is 1.2.3"
 

@@ -24,8 +24,8 @@ def main():
     # The fileinput.input() function either takes piped input, or looks for a filename
     # and tries to open it and read it line by line.
     for line in fileinput.input():
-        print()
-        print(line.strip())
+        #print()    #debug
+        #print(line.strip())        #debug
         words = line.strip().split()
 
         # blank line: skip it silently
