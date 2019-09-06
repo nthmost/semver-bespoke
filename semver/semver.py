@@ -38,6 +38,35 @@ def parse_semver_text(text):
     return res.groupdict()
 
 
+def rec_cmp_releases(one, two):
+    """Recursive function that compares two version strings represented as lists
+    to determine which one comes "after" / takes precedence, or if they are equivalent.
+
+    List items must be integers (will throw TypeError otherwise).
+
+    If the left argument ("one") is a later version, returns 1.
+    If the right argument ("two") is a later version, returns 2.
+    If they are equivalent, returns 0.
+
+    :param one: list of ints to compare to two
+    :param two: list of ints to compare to one
+    :returns: code in (0, 1, 2)
+    :rtype: int
+    """
+    # we've exhausted all three levels of comparison, so logically we're at equivalence.
+    if len(one)==0:
+        return 0
+
+    top1 = one[0]
+    top2 = two[0]
+
+    if top1 > top2:
+        return 1
+    elif top1 < top2:
+        return 2
+    else:
+        return rec_cmp_releases(one[1:], two[1:])
+
 
 def rec_cmp_prereleases(one, two):
     """Recursive function that compares two version strings represented as lists
@@ -79,7 +108,7 @@ def rec_cmp_prereleases(one, two):
         cmp_strs[2] = two[0]
 
     if len(cmp_strs)==2:
-        # if equivalent, recurse down further.
+        # if the two strings are equivalent, recurse down further.
         # if not, declare a winner by ASCII value.
         if cmp_strs[1] == cmp_strs[2]:
             return rec_cmp_prereleases(one[1:], two[1:])
@@ -89,7 +118,7 @@ def rec_cmp_prereleases(one, two):
             return 2
 
     elif len(cmp_ints)==2:
-        # if equivalent, recurse down further.
+        # if the two integers are equivalent, recurse down further.
         # otherwise, declare a winner by integer value. 
         if cmp_ints[1] == cmp_ints[2]:
             return rec_cmp_prereleases(one[1:], two[1:])
@@ -247,28 +276,24 @@ class SemverThing(object):
 
 
     # COMPARISON OPERATOR DEFINTIIONS: 
-    #           the left-hand object in the statement is "self"; the right-hand is "other".
-    #
+    #           The left-hand object in the statement is "self"; the right-hand is "other".
+    #           In cmp_* functions these map to one (1) and two (2) respectively.
+
     # <
     def __lt__(self, other):
-        if self.major < other.major:
-            return True
+        conditions = {0: False,
+                      1: False,
+                      2: True
+                     }
 
-        if self.major == other.major:
-            if self.minor < other.minor:
-                return True
-            elif self.minor == other.minor:
-                if self.patch < other.patch:
-                    return True
-                elif self.patch > other.patch:
-                    return False
-                else:
-                    # patches are equivalent; compare on prerelease.
-                    # here we only want to know if other > self (result of 2).
-                    return True if cmp_prerelease(self, other) == 2 else False
+        result = rec_cmp_releases([self.major, self.minor, self.patch],
+                                  [other.major, other.minor, other.patch])
 
-        # self.major > self.minor
-        return False
+        if result in (1,2): 
+            return conditions[result]
+
+        # equivalence? drill down into prerelease.
+        return conditions[cmp_prerelease(self, other)]
 
     # <=
     def __le__(self, other):
@@ -282,28 +307,19 @@ class SemverThing(object):
 
     # >
     def __gt__(self, other):
-        if self.major > other.major:
-            return True
+        conditions = {0: False,
+                      2: False,
+                      1: True
+                     }
 
-        elif self.major == other.major:
-            # majors are equivalent: compare on minor
-            if self.minor > other.minor:
-                return True
+        result = rec_cmp_releases([self.major, self.minor, self.patch],
+                                  [other.major, other.minor, other.patch])
 
-            elif self.minor == other.minor:
-                # both minors are equal; compare on patch
-                if self.patch > other.patch:
-                    return True
-                elif self.patch < other.patch:
-                    return False 
+        if result in (1,2): 
+            return conditions[result]
 
-                elif self.patch == other.patch:
-                    # compare prereleases -- return is in (0, 1, 2) 
-                    # here we only want to know if the result was 1 (self has precendence).
-                    return True if cmp_prerelease(self, other) == 1 else False
-
-        # self.major < self.minor
-        return False
+        # equivalence? drill down into prerelease.
+        return conditions[cmp_prerelease(self, other)]
 
     # >=
     def __ge__(self, other):
@@ -317,17 +333,24 @@ class SemverThing(object):
 
     # ==
     def __eq__(self, other):
-        if (self.major == other.major) and (self.minor == other.minor) and (self.patch == other.patch):
-            # compare prerelease strings (pos results: 0, 1, 2 with 0 meaning equivalence).
-            if cmp_prerelease(self, other) == 0:
-                return True
-        return False
+        conditions = {0: True,
+                      1: False,
+                      2: False,   
+                     }
+
+        # if the result is anything other than 0, these are not equivalent releases.
+        if rec_cmp_releases([self.major, self.minor, self.patch],
+                            [other.major, other.minor, other.patch]):
+            return False
+
+        # OK let's check the prereleases.
+        return conditions[cmp_prerelease(self, other)]
 
     # !=
     def __ne__(self, other):
         return not(self.__eq__(other))
 
-    # OBJECT REPRESENTATION FUNCTIONS: to_dict, __str__, __repr__
+    # OBJECT REPRESENTATION FUNCTIONS: to_dict, to_list, __str__, __repr__
 
     def to_dict(self):
         "Returns a dictionary representation of the attributes on this object."
