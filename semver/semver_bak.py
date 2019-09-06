@@ -39,8 +39,8 @@ def parse_semver_text(text):
 
 
 
-def rec_cmp_prereleases(one, two):
-    """Recursive function that compares two version strings represented as lists
+def rec_cmp_numerical_version_strings(one, two):
+    """Recursive function that compares two dot-separated numerical version strings
     to determine which takes precedence.  If it is the left argument ("one"), the 
     result will be a 1.  If the righthand argument wins ("two"), the result will be
     a 2.  If the two are equivalent (i.e. are the same string), the result is a 0.
@@ -53,53 +53,23 @@ def rec_cmp_prereleases(one, two):
     if one == two:
         return 0
 
-    # if either has reached its zenith of productivity, the other has won.
-    #
-    # (Note that this is only correct in the context of there being conditionals in
-    #  the cmp_prerelease function that already handle the case in which one 
-    #  version string has a prerelease and the other one doesn't!  This recursive
-    #  comparator function won't ever be invoked in that situation.) 
-    if len(one) == 0:
-        return 2
-    elif len(two) == 0:
+    try:
+        top1 = int(one.split('.')[0])
+    except ValueError:
+        top1 = 0
+
+    try:
+        top2 = int(two.split('.')[0])
+    except ValueError:
+        top2 = 0
+
+    if top1 > top2:
         return 1
+    elif top1 < top2: 
+        return 2
+    
+    return rec_cmp_numerical_version_strings('.'.join(one.split('.')[1:]), '.'.join(two.split('.')[1:]))
 
-    # ok so we still have two values to compare.
-    # try to make ints; if we fail, then we have ASCII.
-    cmp_strs = {}
-    cmp_ints = {}
-    try:
-        cmp_ints[1] = int(one[0])
-    except ValueError:
-        cmp_strs[1] = one[0]
-
-    try:
-        cmp_ints[2] = int(two[0])
-    except ValueError:
-        cmp_strs[2] = two[0]
-
-    if len(cmp_strs)==2:
-        # if equivalent, recurse down further.
-        # if not, declare a winner by ASCII value.
-        if cmp_strs[1] == cmp_strs[2]:
-            return rec_cmp_prereleases(one[1:], two[1:])
-        elif cmp_strs[1] > cmp_strs[2]:
-            return 1
-        elif cmp_strs[1] < cmp_strs[2]:
-            return 2
-
-    elif len(cmp_ints)==2:
-        # if equivalent, recurse down further.
-        # otherwise, declare a winner by integer value. 
-        if cmp_ints[1] == cmp_ints[2]:
-            return rec_cmp_prereleases(one[1:], two[1:])
-        elif cmp_ints[1] > cmp_ints[2]:
-            return 1
-        elif cmp_ints[1] < cmp_ints[2]:
-            return 2
-
-    # Apples and oranges: ASCII always wins.
-    return list(cmp_strs.keys())[0]
 
 
 def cmp_prerelease(sv1, sv2):
@@ -116,18 +86,49 @@ def cmp_prerelease(sv1, sv2):
         return 0
 
     if sv1.prerelease and sv2.prerelease:
-        # If we have something like alpha-11 and alpha-2, we want to compare the number field 
-        # as numbers (not ASCII, which would give the wrong answer for that pair).
-        #
-        # Another possiblity is that we're just comparing numbers, e.g. "1-2-3" to "1-2-4"
-        # 
-        # In any case, let's standardize to using dots instead of dashes.
-        pre1 = sv1.prerelease.replace('-', '.')
-        pre2 = sv2.prerelease.replace('-', '.')
+        # pull out words and numbers.
+        match1 = re_prerelease.match(sv1.prerelease).groupdict()
+        match2 = re_prerelease.match(sv2.prerelease).groupdict()
 
-        # convert each to a list and then recursively compare the successive strings to each other.
-        return rec_cmp_prereleases(pre1.split('.'), pre2.split('.'))
+        # if we have something like alpha-1 and alpha-2, compare the number field.
+        # Another possiblity is that we're just comparing numbers, e.g. "1-2-3" to "1-2-4"
+        if match1['abc'] == match2['abc']:
+            # standardize the number part to dots.
+            num1 = match1['num'].replace('-', '.')
+            num2 = match2['num'].replace('-', '.')
+
+            # strip the initial dot, if there was one.
+            # if there wasn't any number string, pretend it was '0'.
+            try:
+                if num1[0] == '.':
+                    num1 = num1[1:]
+            except IndexError:
+                num1 = '0'
+            try:
+                if num2[0] == '.':
+                    num2 = num2[1:]
+            except IndexError:
+                num2 = '0'
+
+            # recursively compare the numerical strings to each other, but as numbers (not strings).
+            return rec_cmp_numerical_version_strings(num1, num2)
                     
+        # the easiest condition: comparing two ASCII strings.
+        if match1['abc'] and match2['abc']:
+            if match1['abc'] > match2['abc']:
+                return 1
+            else:
+                return 2 
+            
+        # apples to oranges conditions, such as comparing "alpha-1.2" to "1-2-3".
+        #
+        # According to the spec, prereleases that start with alphanumerics take precedence 
+        # over prereleases that do not start with words.  (I am not fully confident in this.)
+        if match1['abc'] and not match2['abc']:
+            return 1
+        elif match2['abc'] and not match1['abc']:
+            return 2
+
     # if sv1 has a prerelease, and sv2 doesn't, sv2 takes precedence
     elif sv1.prerelease and not sv2.prerelease:
         return 2
