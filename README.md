@@ -49,6 +49,25 @@ The real work of parsing and comparing versions is done on the SemverThing objec
 
 Yes I realize this is a silly name.
 
+Basic Usage:
+
+```
+from semver import SemverThing
+
+sv1 = SemverThing('2.4.5-alpha')
+sv2 = SemverThing('2.4.5-beta')
+
+>>> print(sv1 > sv2)
+False
+
+>>> print(sv2 == sv1)
+False
+
+>>> print(sv2 > sv1)
+True
+```
+
+
 You can build a SemverThing in three different ways:
 
     1) Instantiate with a plain string, e.g. "1.2.3".  The text variable will be parsed
