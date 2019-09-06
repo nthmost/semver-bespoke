@@ -3,9 +3,16 @@ Implementation of Semver 2.0 in Python by Naomi Most, 9/3/2019
 
 The official Semver 2.0 reference can be found at https://semver.org/spec/v2.0.0.html
 
-This project implements a command line tool that checks pairs of strings to determine if they
-are correct semantic version strings, and then compares these pairs against each other to 
-determine (and print) their relationship to each other.
+This project's primary product is the `semver` console script which is operated like so:
+
+```
+semver <input_filename>
+
+echo "release pair\nrelease pair\n" >> semver
+```
+
+This tool takes pairs of semantic version strings, determines if they are valid, 
+and then compares these pairs to determine (and print) their relationship to each other.
 
 For example, the pair `2.3.4` and `2.3.5` would give the result "before", meaning that 2.3.4
 came before 2.3.5.  The pair `1.3.5` and `1.3.1` would give the result "after".  Other possible
@@ -15,6 +22,21 @@ This package also provides a handy-dandy object for parsing and comparing semant
 It's called the SemverThing.  See Developer API section below for more.
 
 ## Setup ##
+
+You can install globally by using pip, or you can install from the repo within a virtual environment.
+
+Method 1: 
+
+```
+pip install -e git+https://github.com/nthmost/semver-bespoke/#egg=semver
+```
+
+This installs the `semver` console app on your system so it's accessible from anywhere.
+
+
+Method 2:
+
+Clone this repo.
 
 After cloning this repo, navigate into the newly created folder and create a python
 virtual environment for this project::
@@ -41,7 +63,6 @@ Or you can read from a file containing readable text.
 ```
 semver input.txt
 ```
-
 
 ## Developer API ##
 
