@@ -96,10 +96,16 @@ You can build a SemverThing in three different ways:
         NOTE that numerical version components (major, minor, patch) are converted to integers within
         the object for ease of comparison.
 
-        To convert a SemverThing to a composed version string, simply use the python str operator::
+        To convert a SemverThing to a composed version string, simply use the python str operator:
 
             print(sv1)                               # "1.2.3-alpha"
             print("My version is %s" % sv2)          # "My version is 1.2.3"
+
+        Finally, there's a convenience function `to_dict()` that converts the salient components of the
+        class into values in a dictionary.  For example:
+
+            print(sv1.to_dict())  # {'major': 1, 'minor': 2, 'patch': 3, 'prerelease': 'alpha', 'buildmetadata': ''}
+
 
 
 ## Testing ##
@@ -109,6 +115,14 @@ of the repo:
 
 ```
 py.test tests
+```
+
+The tests contain a lot of different fixtures of possible release strings, but most importantly,
+there's a test that checks the Gold Standard Sequence of comparison set by the Semver Spec.
+To wit:
+
+```
+1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0
 ```
 
 
