@@ -168,8 +168,5 @@ To wit:
 
 ## Contact ##
 
-This library and command line tool was written for a coding assignment by Naomi Most.
-I may or may not keep it updated if I find it useful.
-
-pnaomi@gmail.com
+You can contact the author (@nthmost) via GitHub, file an issue and/or submit a pull request at your leisure.
 
